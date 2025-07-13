@@ -1,0 +1,67 @@
+server:
+  port: 8080
+  servlet:
+    context-path: /api
+
+spring:
+  application:
+    name: aws-s3-poc
+  servlet:
+    multipart:
+      max-file-size: 50MB
+      max-request-size: 100MB
+      enabled: true
+
+# Configurações AWS
+aws:
+  s3:
+    bucket-name: aws-s3-poc-bucket
+    region: us-east-1
+    endpoint: http://localhost:4566  # LocalStack endpoint
+    access-key: test
+    secret-key: test
+    path-style-access: true
+
+# Configurações da aplicação
+app:
+  file:
+    max-size: 52428800  # 50MB em bytes
+    allowed-extensions:
+      - jpg
+      - jpeg
+      - png
+      - gif
+      - pdf
+      - txt
+      - doc
+      - docx
+      - xls
+      - xlsx
+
+# Configurações do OpenAPI
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    try-it-out-enabled: true
+    operations-sorter: method
+    tags-sorter: alpha
+
+# Configurações de Log
+logging:
+  level:
+    com.bianeck.s3poc: DEBUG
+    software.amazon.awssdk: INFO
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+
+# Configurações do Actuator
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: always

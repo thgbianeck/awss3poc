@@ -1,0 +1,17 @@
+spring:
+  profiles:
+    active: test
+
+aws:
+  s3:
+    bucket-name: test-bucket
+    region: us-east-1
+    endpoint: ${LOCALSTACK_ENDPOINT:http://localhost:4566}
+    access-key: test
+    secret-key: test
+    path-style-access: true
+
+logging:
+  level:
+    com.bianeck.s3poc: DEBUG
+    org.testcontainers: INFO
