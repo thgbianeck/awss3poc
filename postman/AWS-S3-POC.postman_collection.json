@@ -1,0 +1,805 @@
+{
+  "info": {
+    "name": "AWS S3 POC - File Management API",
+    "description": "Collection completa para testar todos os endpoints da POC de integração com AWS S3",
+    "version": "1.0.0",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080/api",
+      "type": "string"
+    },
+    {
+      "key": "uploadedFileKey",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "presignedUrl",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "📤 Upload Operations",
+      "item": [
+        {
+          "name": "Upload Single File",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 201', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "pm.test('Response has correct structure', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('success', true);",
+                  "    pm.expect(jsonData).to.have.property('files');",
+                  "    pm.expect(jsonData.files).to.be.an('array');",
+                  "    pm.expect(jsonData.files[0]).to.have.property('key');",
+                  "    ",
+                  "    // Salva a chave do arquivo para usar em outros testes",
+                  "    pm.collectionVariables.set('uploadedFileKey', jsonData.files[0].key);",
+                  "});",
+                  "",
+                  "pm.test('File info is correct', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    const file = jsonData.files[0];",
+                  "    pm.expect(file.fileName).to.eql('test-document.pdf');",
+                  "    pm.expect(file.contentType).to.eql('application/pdf');",
+                  "    pm.expect(file.size).to.be.above(0);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": "test-document.pdf",
+                  "description": "Arquivo PDF de teste"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/files/upload",
+              "host": ["{{baseUrl}}"],
+              "path": ["files", "upload"]
+            },
+            "description": "Faz upload de um único arquivo PDF"
+          }
+        },
+        {
+          "name": "Upload Multiple Files",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 201', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "pm.test('Multiple files uploaded', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.files).to.have.lengthOf(2);",
+                  "    pm.expect(jsonData.totalFiles).to.eql(2);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "files",
+                  "type": "file",
+                  "src": "document1.txt"
+                },
+                {
+                  "key": "files",
+                  "type": "file",
+                  "src": "document2.txt"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/files/upload-multiple",
+              "host": ["{{baseUrl}}"],
+              "path": ["files", "upload-multiple"]
+            },
+            "description": "Faz upload de múltiplos arquivos simultaneamente"
+          }
+        },
+        {
+          "name": "Upload Invalid File (Should Fail)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 400', function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test('Error message contains extension info', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.message).to.include('não é permitida');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": "invalid-file.xyz"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/files/upload",
+              "host": ["{{baseUrl}}"],
+              "path": ["files", "upload"]
+            },
+            "description": "Tenta fazer upload de arquivo com extensão inválida"
+          }
+        }
+      ],
+      "description": "Operações de upload de arquivos"
+    },
+    {
+      "name": "📥 Download Operations",
+      "item": [
+        {
+          "name": "Download File",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Content-Disposition header is present', function () {",
+                  "    pm.expect(pm.response.headers.get('Content-Disposition')).to.include('attachment');",
+                  "});",
+                  "",
+                  "pm.test('Content-Type is correct', function () {",
+                  "    pm.expect(pm.response.headers.get('Content-Type')).to.include('application/pdf');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/files/download/{{uploadedFileKey}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["files", "download", "{{uploadedFileKey}}"]
+            },
+            "description": "Faz download de um arquivo usando sua chave"
+          }
+        },
+        {
+          "name": "Download Non-Existent File (Should Fail)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 404', function () {",
+                  "    pm.response.to.have.status(404);",
+                  "});",
+                  "",
+                  "pm.test('Error message is appropriate', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.message).to.include('não encontrado');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/files/download/files/non-existent-file.pdf",
+              "host": ["{{baseUrl}}"],
+              "path": ["files", "download", "files", "non-existent-file.pdf"]
+            },
+            "description": "Tenta fazer download de arquivo inexistente"
+          }
+        }
+      ],
+      "description": "Operações de download de arquivos"
+    },
+    {
+      "name": "�� List Operations",
+      "item": [
+        {
+          "name": "List All Files",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Response is an array', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.be.an('array');",
+                  "});",
+                  "",
+                  "pm.test('Files have required properties', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    if (jsonData.length > 0) {",
+                  "        const file = jsonData[0];",
+                  "        pm.expect(file).to.have.property('fileName');",
+                  "        pm.expect(file).to.have.property('key');",
+                  "        pm.expect(file).to.have.property('size');",
+                  "        pm.expect(file).to.have.property('contentType');",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/files",
+              "host": ["{{baseUrl}}"],
+              "path": ["files"]
+            },
+            "description": "Lista todos os arquivos do bucket"
+          }
+        },
+        {
+          "name": "List Files by Prefix",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('All files match prefix', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    jsonData.forEach(function(file) {",
+                  "        pm.expect(file.key).to.include('files/2024');",
+                  "    });",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/files/prefix/files/2024",
+              "host": ["{{baseUrl}}"],
+              "path": ["files", "prefix", "files", "2024"]
+            },
+            "description": "Lista arquivos filtrados por prefixo"
+          }
+        },
+        {
+          "name": "Get File Info",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('File info is complete', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('fileName');",
+                  "    pm.expect(jsonData).to.have.property('key');",
+                  "    pm.expect(jsonData).to.have.property('size');",
+                  "    pm.expect(jsonData).to.have.property('lastModified');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/files/info/{{uploadedFileKey}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["files", "info", "{{uploadedFileKey}}"]
+            },
+            "description": "Obtém informações detalhadas de um arquivo"
+          }
+        }
+      ],
+      "description": "Operações de listagem e consulta"
+    },
+    {
+      "name": "🔗 Presigned URLs",
+      "item": [
+        {
+          "name": "Generate Presigned URL for Download",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Presigned URL is generated', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('presignedUrl');",
+                  "    pm.expect(jsonData.presignedUrl).to.be.a('string');",
+                  "    pm.expect(jsonData.presignedUrl).to.include('X-Amz-Algorithm');",
+                  "    pm.expect(jsonData.operation).to.eql('GET');",
+                  "    ",
+                  "    // Salva a URL para teste posterior",
+                  "    pm.collectionVariables.set('presignedUrl', jsonData.presignedUrl);",
+                  "});",
+                  "",
+                  "pm.test('Validity is correct', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.validityMinutes).to.eql(30);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/files/presigned-url/download/{{uploadedFileKey}}?durationMinutes=30",
+              "host": ["{{baseUrl}}"],
+              "path": ["files", "presigned-url", "download", "{{uploadedFileKey}}"],
+              "query": [
+                {
+                  "key": "durationMinutes",
+                  "value": "30"
+                }
+              ]
+            },
+            "description": "Gera URL pré-assinada para download com validade de 30 minutos"
+          }
+        },
+        {
+          "name": "Generate Presigned URL for Upload",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Upload URL is generated', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('presignedUrl');",
+                  "    pm.expect(jsonData.operation).to.eql('PUT');",
+                  "    pm.expect(jsonData.fileName).to.eql('new-document.pdf');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/files/presigned-url/upload?fileName=new-document.pdf&contentType=application/pdf&durationMinutes=60",
+              "host": ["{{baseUrl}}"],
+              "path": ["files", "presigned-url", "upload"],
+              "query": [
+                {
+                  "key": "fileName",
+                  "value": "new-document.pdf"
+                },
+                {
+                  "key": "contentType",
+                  "value": "application/pdf"
+                },
+                {
+                  "key": "durationMinutes",
+                  "value": "60"
+                }
+              ]
+            },
+            "description": "Gera URL pré-assinada para upload com validade de 60 minutos"
+          }
+        },
+        {
+          "name": "Test Presigned URL Download",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('File content is received', function () {",
+                  "    pm.expect(pm.response.responseSize).to.be.above(0);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{presignedUrl}}",
+              "host": ["{{presignedUrl}}"]
+            },
+            "description": "Testa o download usando a URL pré-assinada gerada"
+          }
+        }
+      ],
+      "description": "Operações com URLs pré-assinadas"
+    },
+    {
+      "name": "🗑️ Delete Operations",
+      "item": [
+        {
+          "name": "Check File Exists",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('File exists', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.exists).to.be.true;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/files/exists/{{uploadedFileKey}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["files", "exists", "{{uploadedFileKey}}"]
+            },
+            "description": "Verifica se um arquivo existe antes de excluí-lo"
+          }
+        },
+        {
+          "name": "Delete Single File",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('File deleted successfully', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.true;",
+                  "    pm.expect(jsonData.message).to.include('sucesso');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/files/{{uploadedFileKey}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["files", "{{uploadedFileKey}}"]
+            },
+            "description": "Exclui um arquivo específico"
+          }
+        },
+        {
+          "name": "Delete Multiple Files",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Batch deletion completed', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('totalRequested');",
+                  "    pm.expect(jsonData).to.have.property('deletedCount');",
+                  "    pm.expect(jsonData).to.have.property('failedCount');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "[\n    \"files/2024/01/document1-abc123.txt\",\n    \"files/2024/01/document2-def456.txt\"\n]"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/files/batch",
+              "host": ["{{baseUrl}}"],
+              "path": ["files", "batch"]
+            },
+            "description": "Exclui múltiplos arquivos em uma operação"
+          }
+        },
+        {
+          "name": "Verify File Deleted",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('File no longer exists', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.exists).to.be.false;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/files/exists/{{uploadedFileKey}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["files", "exists", "{{uploadedFileKey}}"]
+            },
+            "description": "Confirma que o arquivo foi excluído"
+          }
+        }
+      ],
+      "description": "Operações de exclusão de arquivos"
+    },
+    {
+      "name": "📋 Utility Operations",
+      "item": [
+        {
+          "name": "Copy File",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 201', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "pm.test('File copied successfully', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('key');",
+                  "    pm.expect(jsonData.key).to.include('backup');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/files/copy?sourceKey={{uploadedFileKey}}&destinationKey=files/backup/copied-document.pdf",
+              "host": ["{{baseUrl}}"],
+              "path": ["files", "copy"],
+              "query": [
+                {
+                  "key": "sourceKey",
+                  "value": "{{uploadedFileKey}}"
+                },
+                {
+                  "key": "destinationKey",
+                  "value": "files/backup/copied-document.pdf"
+                }
+              ]
+            },
+            "description": "Copia um arquivo para um novo local"
+          }
+        },
+        {
+          "name": "Get Bucket Statistics",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Statistics are complete', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('totalFiles');",
+                  "    pm.expect(jsonData).to.have.property('totalSize');",
+                  "    pm.expect(jsonData).to.have.property('totalSizeFormatted');",
+                  "    pm.expect(jsonData).to.have.property('filesByExtension');",
+                  "    pm.expect(jsonData).to.have.property('lastUpdated');",
+                  "});",
+                  "",
+                  "pm.test('File count is numeric', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.totalFiles).to.be.a('number');",
+                  "    pm.expect(jsonData.totalSize).to.be.a('number');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/files/stats",
+              "host": ["{{baseUrl}}"],
+              "path": ["files", "stats"]
+            },
+            "description": "Obtém estatísticas gerais do bucket"
+          }
+        }
+      ],
+      "description": "Operações utilitárias e estatísticas"
+    },
+    {
+      "name": "🔍 API Documentation",
+      "item": [
+        {
+          "name": "OpenAPI Documentation",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api-docs",
+              "host": ["{{baseUrl}}"],
+              "path": ["api-docs"]
+            },
+            "description": "Acessa a documentação OpenAPI em formato JSON"
+          }
+        },
+        {
+          "name": "Swagger UI",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8080/api/swagger-ui.html",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["api", "swagger-ui.html"]
+            },
+            "description": "Acessa a interface Swagger UI (abrir no navegador)"
+          }
+        },
+        {
+          "name": "Health Check",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Application is healthy', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.status).to.eql('UP');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8080/api/actuator/health",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["api", "actuator", "health"]
+            },
+            "description": "Verifica o status de saúde da aplicação"
+          }
+        }
+      ],
+      "description": "Documentação e monitoramento da API"
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Script executado antes de cada requisição",
+          "console.log('Executando requisição para: ' + pm.request.url);",
+          "",
+          "// Verifica se LocalStack está rodando",
+          "if (pm.request.url.toString().includes('localhost:8080')) {",
+          "    console.log('✅ Usando servidor local - certifique-se que a aplicação está rodando');",
+          "}"
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Script executado após cada requisição",
+          "pm.test('Response time is acceptable', function () {",
+          "    pm.expect(pm.response.responseTime).to.be.below(5000);",
+          "});",
+          "",
+          "// Log do resultado",
+          "console.log('📊 Status:', pm.response.status, '| Tempo:', pm.response.responseTime + 'ms');"
+        ]
+      }
+    }
+  ]
+}
