@@ -2,3 +2,9 @@
 
 ### - src\
 @import ".\src\doc.md";
+
+### - postman
+@import ".\postman\doc.md";
+
+### - scripts
+@import ".\scripts\doc.md";
