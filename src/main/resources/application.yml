@@ -12,7 +12,7 @@ spring:
       max-request-size: 100MB
       enabled: true
 
-# Configurações AWS
+# Configuraï¿½ï¿½es AWS
 aws:
   s3:
     bucket-name: aws-s3-poc-bucket
@@ -22,7 +22,7 @@ aws:
     secret-key: test
     path-style-access: true
 
-# Configurações da aplicação
+# Configuraï¿½ï¿½es da aplicaï¿½ï¿½o
 app:
   file:
     max-size: 52428800  # 50MB em bytes
@@ -38,7 +38,7 @@ app:
       - xls
       - xlsx
 
-# Configurações do OpenAPI
+# Configuraï¿½ï¿½es do OpenAPI
 springdoc:
   api-docs:
     path: /api-docs
@@ -48,15 +48,15 @@ springdoc:
     operations-sorter: method
     tags-sorter: alpha
 
-# Configurações de Log
+# Configuraï¿½ï¿½es de Log
 logging:
   level:
-    com.bianeck.s3poc: DEBUG
+    br.com.thiagobianeck.awss3poc: DEBUG
     software.amazon.awssdk: INFO
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
 
-# Configurações do Actuator
+# Configuraï¿½ï¿½es do Actuator
 management:
   endpoints:
     web:

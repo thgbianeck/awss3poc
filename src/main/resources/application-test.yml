@@ -1,7 +1,11 @@
 spring:
   profiles:
     active: test
-
+  servlet:
+    multipart:
+      max-file-size: 1MB      # Menor para testes rápidos
+      max-request-size: 5MB   # Reduzido para eficiência
+      
 aws:
   s3:
     bucket-name: test-bucket
@@ -11,7 +15,32 @@ aws:
     secret-key: test
     path-style-access: true
 
+# Configurações específicas para testes
+app:
+  file:
+    max-size: 1048576  # 1MB para testes rápidos
+    allowed-extensions:
+      - txt
+      - pdf
+      - jpg  # Apenas extensões essenciais para testes
+  test:
+    timeout:
+      upload: 5000      # 5 segundos
+      download: 3000    # 3 segundos
+      connection: 2000  # 2 segundos
+    cleanup:
+      enabled: true
+      delete-after-test: true
+      max-test-files: 100
+    
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health  # Apenas health para testes
+
 logging:
   level:
-    com.bianeck.s3poc: DEBUG
+    br.com.thiagobianeck.awss3poc: DEBUG
     org.testcontainers: INFO
+    software.amazon.awssdk: WARN  # Menos verboso
