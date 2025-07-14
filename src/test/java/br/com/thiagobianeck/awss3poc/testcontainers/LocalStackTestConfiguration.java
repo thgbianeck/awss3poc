@@ -34,9 +34,9 @@ public class LocalStackTestConfiguration {
     @DynamicPropertySource
     static void setProperties(DynamicPropertyRegistry registry) {
         registry.add("aws.s3.endpoint", () -> localstack.getEndpointOverride(LocalStackContainer.Service.S3).toString());
-        registry.add("aws.s3.region", () -> localstack.getRegion());
-        registry.add("aws.s3.access-key", () -> localstack.getAccessKey());
-        registry.add("aws.s3.secret-key", () -> localstack.getSecretKey());
+        registry.add("aws.s3.region", localstack::getRegion);
+        registry.add("aws.s3.access-key", localstack::getAccessKey);
+        registry.add("aws.s3.secret-key", localstack::getSecretKey);
         registry.add("aws.s3.bucket-name", () -> "test-bucket");
     }
 

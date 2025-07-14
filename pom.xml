@@ -13,22 +13,33 @@
     <artifactId>awss3poc</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <name>awss3poc</name>
-    <description>awss3poc</description>
-    <url/>
+    <description>POC de integração com AWS S3 usando Spring Boot e LocalStack</description>
+    <url>https://github.com/thgbianeck/awss3poc</url>
+
     <licenses>
-        <license/>
+        <license>
+            <name>MIT License</name>
+            <url>https://opensource.org/licenses/MIT</url>
+        </license>
     </licenses>
+
     <developers>
-        <developer/>
+        <developer>
+            <id>bianeck</id>
+            <name>Thiago Bianeck</name>
+            <email>thgbianeck@gmail.com</email>
+            <roles>
+                <role>developer</role>
+            </roles>
+        </developer>
     </developers>
+
     <scm>
-        <connection/>
-        <developerConnection/>
-        <tag/>
-        <url/>
+        <connection>scm:git:git://github.com/thgbianeck/awss3poc.git</connection>
+        <developerConnection>scm:git:ssh://github.com:thgbianeck/awss3poc.git</developerConnection>
+        <url>https://github.com/thgbianeck/awss3poc/tree/main</url>
     </scm>
     <properties>
-        <java.version>21</java.version>
         <java.version>21</java.version>
         <aws-sdk.version>2.31.77</aws-sdk.version>
         <testcontainers.version>1.21.3</testcontainers.version>
@@ -122,6 +133,19 @@
                         <phase>test</phase>
                         <goals>
                             <goal>report</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.owasp</groupId>
+                <artifactId>dependency-check-maven</artifactId>
+                <version>8.4.0</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>check</goal>
                         </goals>
                     </execution>
                 </executions>

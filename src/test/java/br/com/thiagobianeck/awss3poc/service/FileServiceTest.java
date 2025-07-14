@@ -15,6 +15,7 @@ import org.springframework.context.annotation.Import;
 import org.springframework.core.io.Resource;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.web.multipart.MultipartFile;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.CreateBucketRequest;
@@ -23,6 +24,7 @@ import software.amazon.awssdk.services.s3.model.HeadBucketRequest;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.List;
+import java.util.stream.IntStream;
 
 import static org.assertj.core.api.Assertions.*;
 
@@ -47,9 +49,9 @@ class FileServiceTest {
     @Value("${aws.s3.bucket-name}")
     private String bucketName;
 
-    private MockMultipartFile testFile;
-    private MockMultipartFile largeFile;
-    private MockMultipartFile invalidFile;
+    private MultipartFile testFile;
+    private MultipartFile largeFile;
+    private MultipartFile invalidFile;
 
     @BeforeEach
     void setUp() {
@@ -128,10 +130,10 @@ class FileServiceTest {
     @Test
     @DisplayName("Deve fazer upload de múltiplos arquivos")
     void shouldUploadMultipleFiles() {
-        // Given
-        MockMultipartFile file1 = new MockMultipartFile("file1", "doc1.txt", "text/plain", "Conteúdo 1".getBytes());
-        MockMultipartFile file2 = new MockMultipartFile("file2", "doc2.txt", "text/plain", "Conteúdo 2".getBytes());
-        List<MockMultipartFile> files = List.of(file1, file2);
+        // Given - Declaração direta como MultipartFile
+        MultipartFile file1 = new MockMultipartFile("file1", "doc1.txt", "text/plain", "Conteúdo 1".getBytes());
+        MultipartFile file2 = new MockMultipartFile("file2", "doc2.txt", "text/plain", "Conteúdo 2".getBytes());
+        List<MultipartFile> files = List.of(file1, file2);
 
         // When
         List<FileInfoDto> results = fileService.uploadMultipleFiles(files);
@@ -174,7 +176,7 @@ class FileServiceTest {
     void shouldListAllFiles() {
         // Given
         fileService.uploadFile(testFile);
-        MockMultipartFile anotherFile = new MockMultipartFile("file", "outro-doc.txt", "text/plain", "Outro conteúdo".getBytes());
+        MultipartFile anotherFile = new MockMultipartFile("file", "outro-doc.txt", "text/plain", "Outro conteúdo".getBytes());
         fileService.uploadFile(anotherFile);
 
         // When
@@ -243,9 +245,9 @@ class FileServiceTest {
     @Test
     @DisplayName("Deve excluir múltiplos arquivos")
     void shouldDeleteMultipleFiles() {
-        // Given
-        MockMultipartFile file1 = new MockMultipartFile("file1", "delete1.txt", "text/plain", "Conteúdo 1".getBytes());
-        MockMultipartFile file2 = new MockMultipartFile("file2", "delete2.txt", "text/plain", "Conteúdo 2".getBytes());
+        // Given - Declaração direta como MultipartFile
+        MultipartFile file1 = new MockMultipartFile("file1", "delete1.txt", "text/plain", "Conteúdo 1".getBytes());
+        MultipartFile file2 = new MockMultipartFile("file2", "delete2.txt", "text/plain", "Conteúdo 2".getBytes());
 
         List<FileInfoDto> uploadedFiles = fileService.uploadMultipleFiles(List.of(file1, file2));
         List<String> keys = uploadedFiles.stream().map(FileInfoDto::key).toList();
@@ -353,10 +355,14 @@ class FileServiceTest {
     @Test
     @DisplayName("Deve rejeitar mais de 10 arquivos para upload múltiplo")
     void shouldRejectTooManyFilesForMultipleUpload() {
-        // Given
-        List<MockMultipartFile> manyFiles = java.util.stream.IntStream.range(0, 11)
-                .mapToObj(i -> new MockMultipartFile("file" + i, "file" + i + ".txt", "text/plain", "Conteúdo".getBytes()))
-                .collect(java.util.stream.Collectors.toList());
+        // Given - Criação de lista com cast direto para MultipartFile
+        List<MultipartFile> manyFiles = IntStream.range(0, 11)
+                .mapToObj(i -> (MultipartFile) new MockMultipartFile(
+                        "file" + i,
+                        "file" + i + ".txt",
+                        "text/plain",
+                        "Conteúdo".getBytes()))
+                .toList();
 
         // When & Then
         assertThatThrownBy(() -> fileService.uploadMultipleFiles(manyFiles))
